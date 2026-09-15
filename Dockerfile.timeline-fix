@@ -1,0 +1,12 @@
+FROM ghcr.io/jefferyhcool/bilinote:latest
+
+# The official image's helper raises UnboundLocalError while replacing the
+# first Content-[mm:ss] marker. Overlay only the corrected helper so the rest
+# of the official image remains unchanged.
+COPY ./backend/app/utils/note_helper.py /app/backend/app/utils/note_helper.py
+
+# Keep the existing local base model usable. The official supervisor file
+# hard-codes tiny and otherwise overrides docker -e WHISPER_MODEL_SIZE=base.
+RUN sed -i 's/WHISPER_MODEL_SIZE="tiny"/WHISPER_MODEL_SIZE="base"/g' \
+    /etc/supervisor/conf.d/supervisord.conf \
+    && python -m py_compile /app/backend/app/utils/note_helper.py

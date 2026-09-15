@@ -1,0 +1,24 @@
+# 在官方已发布镜像上覆盖本次修复，避免重新下载运行时依赖。
+FROM bilinote-stable:merge-empty-fix-v7
+
+# COPY merges directories. Clear executable source/tests first so removed files
+# from the base image cannot survive as stale code or poison test discovery.
+RUN rm -rf /app/backend/app /app/backend/tests
+COPY ./backend /app/backend
+# Fail the image build if a future full-backend overlay silently replaces the
+# resilient streaming implementation with the old one-shot empty-stream path.
+RUN grep -q 'SUMMARY_PARTIAL_STREAM_FALLBACK' /app/backend/app/gpt/universal_gpt.py \
+ && grep -q 'empty stream phase=' /app/backend/app/gpt/universal_gpt.py \
+ && grep -q 'MODEL_REASONING_EXHAUSTED' /app/backend/app/gpt/universal_gpt.py \
+ && grep -q 'chunk_layout=chunk_layout' /app/backend/app/gpt/universal_gpt.py
+RUN rm -rf /usr/share/nginx/html/*
+COPY ./BillNote_frontend/dist /usr/share/nginx/html
+
+# Per-task values are supplied by the API. These environment values keep the
+# same safe defaults for legacy clients and enable the documented merge fallback
+# in the deployed image.
+ENV SUMMARY_MERGE_FALLBACK_STITCH=true \
+    SUMMARY_REASONING_FALLBACK_EFFORT=low \
+    SUMMARY_REASONING_FALLBACK_MAX_TOKENS=16384 \
+    SUMMARY_MAX_CONCURRENCY=6 \
+    SUMMARY_RETRY_ATTEMPTS=2
