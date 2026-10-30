@@ -31,7 +31,8 @@ export default defineConfig(({ mode }) => {
   const appVersion = env.VITE_APP_VERSION || process.env.VITE_APP_VERSION || readAppVersion()
 
   return {
-    base: './',
+    // Web history routes need root-relative assets when opened or refreshed directly.
+    base: process.env.TAURI_ENV_PLATFORM ? './' : '/',
     define: {
       __APP_VERSION__: JSON.stringify(appVersion),
     },
