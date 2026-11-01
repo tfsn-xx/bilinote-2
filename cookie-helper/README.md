@@ -1,7 +1,5 @@
 # Windows Cookie 获取服务
 
-此目录保留旧版独立 Windows 获取服务。当前 Docker 版本已内置登录浏览器和获取接口，正常使用不需要运行这里的脚本，也不需要 Windows 开机自启动。点击网页“获取 Cookie”即可打开容器内的登录浏览器；登录资料保存在持久化的 `data/cookie-browser/` 中。
-
 此服务配合网页下载配置中的“获取 Cookie”按钮使用，支持哔哩哔哩、YouTube、抖音和快手。
 
 ## 启动
