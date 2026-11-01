@@ -70,7 +70,7 @@ RUN set -ex && \
     echo "deb http://${APT_MIRROR}/debian bookworm-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
     echo "deb http://${APT_MIRROR}/debian-security bookworm-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg nginx supervisor procps && \
+    apt-get install -y --no-install-recommends ffmpeg nginx supervisor procps chromium xvfb x11vnc novnc websockify openbox fonts-noto-cjk && \
     rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/usr/bin:${PATH}"
@@ -126,6 +126,10 @@ autorestart=true
 priority=20
 environment=BACKEND_PORT="%(ENV_BACKEND_PORT)s",BACKEND_HOST="%(ENV_BACKEND_HOST)s",TRANSCRIBER_TYPE="%(ENV_TRANSCRIBER_TYPE)s",WHISPER_MODEL_SIZE="%(ENV_WHISPER_MODEL_SIZE)s",FFMPEG_BIN_PATH="%(ENV_FFMPEG_BIN_PATH)s",HF_ENDPOINT="%(ENV_HF_ENDPOINT)s",STATIC="%(ENV_STATIC)s",OUT_DIR="%(ENV_OUT_DIR)s",DATA_DIR="%(ENV_DATA_DIR)s",NOTE_OUTPUT_DIR="%(ENV_NOTE_OUTPUT_DIR)s",DATABASE_URL="%(ENV_DATABASE_URL)s",IMAGE_BASE_URL="%(ENV_IMAGE_BASE_URL)s",ENV="%(ENV_ENV)s",GROQ_TRANSCRIBER_MODEL="%(ENV_GROQ_TRANSCRIBER_MODEL)s"
 EOF
+
+COPY ./docker/cookie-browser.conf /etc/supervisor/conf.d/cookie-browser.conf
+RUN cat /etc/supervisor/conf.d/cookie-browser.conf >> /etc/supervisor/conf.d/supervisord.conf
+ENV COOKIE_BROWSER_ENABLED=true DISPLAY=:99
 
 # nginx/standalone.conf 已直接写好本地 backend(127.0.0.1:8483)与前端静态服务，无需再 sed 改写。
 

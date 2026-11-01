@@ -13,7 +13,7 @@ RUN rm -f /etc/apt/sources.list && \
     echo "deb https://${APT_MIRROR}/debian bookworm-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
     echo "deb https://${APT_MIRROR}/debian-security bookworm-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg curl && \
+    apt-get install -y --no-install-recommends ffmpeg curl supervisor chromium xvfb x11vnc novnc websockify openbox fonts-noto-cjk && \
     rm -rf /var/lib/apt/lists/*
 
 ENV PATH="/usr/bin:${PATH}"
@@ -28,4 +28,8 @@ RUN pip install --no-cache-dir -i ${PIP_INDEX} -r requirements.txt
 # 再复制应用代码（频繁变动不影响 pip 缓存层）
 COPY ./backend /app
 
-CMD ["python", "main.py"]
+COPY ./docker/cookie-browser.conf /etc/supervisor/cookie-browser.conf
+COPY ./docker/backend-supervisor.conf /etc/supervisor/bilinote.conf
+RUN mkdir -p /var/log/supervisor
+ENV COOKIE_BROWSER_ENABLED=true DISPLAY=:99
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/bilinote.conf"]

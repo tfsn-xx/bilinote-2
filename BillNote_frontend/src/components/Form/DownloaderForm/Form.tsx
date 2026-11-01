@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 import { getDownloaderCookie, updateDownloaderCookie } from '@/services/downloader'
 import {
   cookieHelperRequest,
+  cookieLoginUrl,
   type CookieCaptureSession,
   type CookieCaptureResult,
 } from '@/services/cookieCapture'
@@ -105,6 +106,8 @@ const DownloaderForm = () => {
   }
 
   const captureCookie = async () => {
+    // Open synchronously from the click so the browser treats this as a user action.
+    window.open(cookieLoginUrl, 'bilinote-cookie-login')
     const current: CaptureOperation = {
       cancelled: false,
       deadline: Date.now() + 5 * 60 * 1000,
@@ -213,6 +216,15 @@ const DownloaderForm = () => {
           <p role="status" aria-live="polite" className="text-sm text-gray-500">
             {message || '首次获取需在弹出的浏览器窗口登录；后续会保留登录状态，自动获取并保存。'}
           </p>
+          {capturing && (
+            <a
+              href={cookieLoginUrl}
+              target="bilinote-cookie-login"
+              className="text-sm text-blue-600 underline"
+            >
+              打开登录窗口
+            </a>
+          )}
         </form>
       </Form>
     </div>
