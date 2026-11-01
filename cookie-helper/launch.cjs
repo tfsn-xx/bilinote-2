@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
-const log = message => fs.appendFileSync(path.join(__dirname, 'monitor.log'), `${new Date().toISOString()} ${message}\n`);
-log('Docker monitor launched');
-import(pathToFileURL(path.join(__dirname, 'docker-monitor.mjs')).href).catch(error => { log(error.stack); process.exit(1); });
+const log = error => fs.appendFileSync(path.join(__dirname, 'helper.log'), `${new Date().toISOString()} ${error.stack || error}\n`);
+process.on('uncaughtException', error => { log(error); process.exit(1); });
+import(pathToFileURL(path.join(__dirname, 'on-demand.mjs')).href).catch(error => { log(error); process.exit(1); });

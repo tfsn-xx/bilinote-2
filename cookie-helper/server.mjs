@@ -11,9 +11,23 @@ const ORIGINS = new Set([
 ]);
 const SESSION_TTL = 5 * 60 * 1000;
 
-export function createHelper(browser = new LoginBrowser()) {
+export function createHelper(browser = new LoginBrowser(), { idleTimeout = 0 } = {}) {
   const sessions = new Map();
-  return createServer(async (request, response) => {
+  let idleTimer;
+  const scheduleIdle = () => {
+    clearTimeout(idleTimer);
+    if (!idleTimeout) return;
+    const now = Date.now();
+    for (const [id, session] of sessions) if (session.expires <= now) sessions.delete(id);
+    const nextExpiry = Math.max(now, ...[...sessions.values()].map(session => session.expires));
+    idleTimer = setTimeout(() => {
+      for (const [id, session] of sessions) if (session.expires <= Date.now()) sessions.delete(id);
+      if (sessions.size) return scheduleIdle();
+      server.close();
+      server.closeIdleConnections();
+    }, nextExpiry - now + idleTimeout);
+  };
+  const server = createServer(async (request, response) => {
     response.setHeader('Cache-Control', 'no-store');
     response.setHeader('Vary', 'Origin');
     const send = (status, data) => {
@@ -29,11 +43,13 @@ export function createHelper(browser = new LoginBrowser()) {
     if (request.method !== 'POST' || !request.headers['content-type']?.startsWith('application/json')) {
       return send(405, { error: '请使用 JSON POST 请求。' });
     }
+    response.once('finish', scheduleIdle);
     for (const [id, session] of sessions) if (session.expires < Date.now()) sessions.delete(id);
     if (request.url === '/health') return send(200, { service: 'bilinote-cookie-helper' });
     try {
       const start = /^\/capture\/(bilibili|youtube|douyin|kuaishou)$/.exec(request.url);
       if (start) {
+        clearTimeout(idleTimer);
         const platform = start[1];
         await browser.open(platform);
         const id = randomUUID();
@@ -56,6 +72,9 @@ export function createHelper(browser = new LoginBrowser()) {
       send(500, { error: error.message });
     }
   });
+  server.on('listening', scheduleIdle);
+  server.on('close', () => clearTimeout(idleTimer));
+  return server;
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

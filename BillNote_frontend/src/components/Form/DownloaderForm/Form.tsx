@@ -16,6 +16,7 @@ import toast from 'react-hot-toast'
 import { getDownloaderCookie, updateDownloaderCookie } from '@/services/downloader'
 import {
   cookieHelperRequest,
+  startCookieHelper,
   type CookieCaptureSession,
   type CookieCaptureResult,
 } from '@/services/cookieCapture'
@@ -111,7 +112,7 @@ const DownloaderForm = () => {
     }
     operation.current = current
     setCapturing(true)
-    setMessage('正在打开平台登录窗口…')
+    setMessage('正在启动 Cookie 助手；如浏览器提示，请允许打开。')
     const fail = (error: unknown) => {
       if (current.cancelled) return
       cancelCapture()
@@ -121,6 +122,9 @@ const DownloaderForm = () => {
     }
 
     try {
+      await startCookieHelper(() => current.cancelled)
+      if (current.cancelled) return
+      setMessage('正在打开平台登录窗口…')
       const session = await cookieHelperRequest<CookieCaptureSession>('/capture/' + platform)
       current.id = session.id
       if (current.cancelled) {
