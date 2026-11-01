@@ -21,7 +21,7 @@ Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' 
 Get-CimInstance Win32_Process -Filter "Name = 'node.exe'" | Where-Object {
     $_.CommandLine -and $_.CommandLine.Contains($destination) -and ($_.CommandLine.Contains('launch.cjs') -or $_.CommandLine.Contains('server.mjs'))
 } | ForEach-Object { Stop-Process -Id $_.ProcessId -ErrorAction SilentlyContinue }
-foreach ($name in @('server.mjs', 'browser.mjs', 'on-demand.mjs', 'launch.cjs')) {
+foreach ($name in @('server.mjs', 'browser.mjs', 'on-demand.mjs', 'launch.cjs', 'register-protocol.ps1')) {
     Copy-Item -LiteralPath (Join-Path $PSScriptRoot $name) -Destination (Join-Path $destination $name) -Force
 }
 $profile = Join-Path $installRoot 'cookie-browser'
@@ -34,9 +34,25 @@ Set-Content -LiteralPath (Join-Path $destination 'node-path.txt') -Value $nodePa
 $launcher = Join-Path $destination 'BiliNoteCookieHelper.exe'
 & $compiler /nologo /target:winexe ("/out:$launcher") (Join-Path $PSScriptRoot 'launcher.cs')
 if ($LASTEXITCODE -ne 0) { throw 'Cookie 助手启动器编译失败' }
-$protocol = 'HKCU:\Software\Classes\bilinote-cookie'
-New-Item -Path (Join-Path $protocol 'shell\open\command') -Force | Out-Null
-Set-Item -LiteralPath $protocol -Value 'URL:BiliNote Cookie 助手'
-New-ItemProperty -LiteralPath $protocol -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null
-Set-Item -LiteralPath (Join-Path $protocol 'shell\open\command') -Value ('"' + $launcher + '"')
+# Install from the interactive desktop session: isolated shells can see a private HKCU view.
+$resultPath = Join-Path $destination 'protocol-install-result.json'
+Remove-Item -LiteralPath $resultPath -Force -ErrorAction SilentlyContinue
+$taskName = 'BiliNoteCookieProtocolInstall'
+$pwshPath = (Get-Process -Id $PID).Path
+$action = New-ScheduledTaskAction -Execute $pwshPath -Argument ('-NoProfile -WindowStyle Hidden -File "' + (Join-Path $destination 'register-protocol.ps1') + '"')
+$principal = New-ScheduledTaskPrincipal -UserId ([Security.Principal.WindowsIdentity]::GetCurrent().Name) -LogonType Interactive -RunLevel Limited
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit (New-TimeSpan -Minutes 1) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+Register-ScheduledTask -TaskName $taskName -Action $action -Principal $principal -Settings $settings -Force | Out-Null
+try {
+    Start-ScheduledTask -TaskName $taskName
+    $deadline = (Get-Date).AddSeconds(20)
+    while (-not (Test-Path -LiteralPath $resultPath)) {
+        if ((Get-Date) -gt $deadline) { throw '桌面会话中的 Cookie 助手协议安装超时。' }
+        Start-Sleep -Milliseconds 200
+    }
+    $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+    if (-not $result.success) { throw $result.error }
+} finally {
+    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+}
 Write-Output '已安装按需 Cookie 助手。点击获取按钮时后台启动，获取结束后自动退出，无常驻任务和命令窗口。'
