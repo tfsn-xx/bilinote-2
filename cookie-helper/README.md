@@ -14,6 +14,8 @@ pwsh -File .\cookie-helper\install.ps1
 
 之后进入 BiliNote 的“设置 → 下载配置”，点击“获取 Cookie”即可。服务未运行时，按钮通过 `bilinote-cookie://start` 唤起本机助手；浏览器首次询问是否打开 BiliNote Cookie 助手时，选择允许。助手启动后继续打开原生 Chrome/Edge 平台登录窗口，完成登录后自动填入并保存 Cookie。
 
+按钮会在点击时立即发起唤起，再检查服务连接。15 秒仍未连接时，页面结束等待并显示“打开 Cookie 助手”直接链接，可用它打开助手后重新获取。
+
 助手由无控制台的 Windows 启动器运行，不显示 Node 命令窗口。没有 Docker 状态监听、计划任务、开机启动或登录启动。没有获取会话时，服务空闲 30 秒自动退出；等待登录时最长保留 5 分钟。取消或完成获取后重新开始空闲计时，下次点击按钮会再次唤起。
 
 固定目录为 Windows 公用文档中的 `BiliNote/<当前用户 SID>/`，权限限定为当前用户和 SYSTEM；其中 `cookie-helper/helper.log` 仅记录启动错误，不记录 Cookie。原有登录资料继续保留在 `cookie-browser/`，旧版 `%LOCALAPPDATA%\BiliNote\cookie-browser` 会在首次安装时迁移。
@@ -37,6 +39,7 @@ node .\cookie-helper\server.mjs
 
 ```powershell
 node --test cookie-helper/helper.test.mjs cookie-helper/browser.integration.test.mjs cookie-helper/on-demand.test.mjs
+node --test BillNote_frontend/tests/cookieCapture.test.cjs
 ```
 
 HTTP 测试使用模拟登录信息；Windows 浏览器集成测试在临时独立配置目录内验证四个平台的 HttpOnly Cookie 读取，结束后关闭浏览器并清理目录。

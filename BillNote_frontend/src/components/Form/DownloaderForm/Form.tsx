@@ -55,11 +55,13 @@ const DownloaderForm = () => {
   const [saving, setSaving] = useState(false)
   const [capturing, setCapturing] = useState(false)
   const [message, setMessage] = useState('')
+  const [showHelperLink, setShowHelperLink] = useState(false)
   const operation = useRef<CaptureOperation | null>(null)
 
   useEffect(() => {
     let active = true
     setMessage('')
+    setShowHelperLink(false)
     setCapturing(false)
     const loadCookie = async () => {
       setLoading(true)
@@ -112,7 +114,8 @@ const DownloaderForm = () => {
     }
     operation.current = current
     setCapturing(true)
-    setMessage('正在启动 Cookie 助手；如浏览器提示，请允许打开。')
+    setShowHelperLink(false)
+    setMessage('正在打开 Cookie 助手，请在浏览器提示中点击“打开”。')
     const fail = (error: unknown) => {
       if (current.cancelled) return
       cancelCapture()
@@ -122,7 +125,12 @@ const DownloaderForm = () => {
     }
 
     try {
-      await startCookieHelper(() => current.cancelled)
+      try {
+        await startCookieHelper(() => current.cancelled)
+      } catch (error) {
+        if (!current.cancelled) setShowHelperLink(true)
+        throw error
+      }
       if (current.cancelled) return
       setMessage('正在打开平台登录窗口…')
       const session = await cookieHelperRequest<CookieCaptureSession>('/capture/' + platform)
@@ -217,6 +225,11 @@ const DownloaderForm = () => {
           <p role="status" aria-live="polite" className="text-sm text-gray-500">
             {message || '首次获取需在弹出的浏览器窗口登录；后续会保留登录状态，自动获取并保存。'}
           </p>
+          {showHelperLink && (
+            <a href="bilinote-cookie://start" className="text-sm text-primary underline">
+              打开 Cookie 助手
+            </a>
+          )}
         </form>
       </Form>
     </div>

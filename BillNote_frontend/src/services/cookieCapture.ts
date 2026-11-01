@@ -15,16 +15,16 @@ async function helperIsReady(): Promise<boolean> {
 }
 
 export async function startCookieHelper(isCancelled: () => boolean): Promise<void> {
-  if (await helperIsReady()) return
   if (isCancelled()) return
+  // Keep the external-protocol launch inside the user's click, before any await.
   window.location.assign('bilinote-cookie://start')
-  const deadline = Date.now() + 45000
+  const deadline = Date.now() + 15000
   while (!isCancelled() && Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, 500))
     if (await helperIsReady()) return
+    await new Promise(resolve => setTimeout(resolve, 500))
   }
   if (!isCancelled()) {
-    throw new Error('Cookie 助手未启动，请在浏览器提示中允许打开 BiliNote Cookie 助手，然后重新获取。')
+    throw new Error('未能启动 Cookie 助手。如果浏览器没有弹出“打开应用”提示，请点击下方“打开 Cookie 助手”后重试获取。')
   }
 }
 
