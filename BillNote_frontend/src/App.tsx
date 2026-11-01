@@ -79,6 +79,7 @@ function App() {
                   <Route path=":id" element={<ProviderForm />} />
                 </Route>
                 <Route path="download" element={<Downloader />}>
+                  <Route index element={<Navigate to="bilibili" replace />} />
                   <Route path=":id" element={<DownloaderForm />} />
                 </Route>
                 <Route path="transcriber" element={<TranscriberPage />} />

@@ -45,7 +45,7 @@ BiliNote-2 重点改进了长视频总结的稳定性、任务进度反馈、Bil
 
 - 下载配置增加“获取 Cookie”按钮，支持哔哩哔哩、YouTube、抖音和快手。
 - 首次在专用浏览器窗口登录，完成后自动填入并保存，后续复用登录状态。
-- Windows 用户需启动[本机 Cookie 获取服务](./cookie-helper/README.md)，可设置为登录 Windows 后自动启动。
+- 使用原生 Chrome/Edge 登录窗口；安装一次 [Docker 状态桥接](./cookie-helper/README.md)后，Cookie 服务随 `bilinote-2` 容器运行，无需每次执行脚本。
 
 ## Docker 部署
 
@@ -106,7 +106,7 @@ http://localhost:3015
 进入网页后：
 
 1. 在模型设置中填写大模型服务商、API Key、模型名称和 Base URL。
-2. 如需处理受登录状态限制的视频，在下载配置中点击“获取 Cookie”（先启动[本机获取服务](./cookie-helper/README.md)），或手动填写有效 Cookie。
+2. 如需处理受登录状态限制的视频，在下载配置中点击“获取 Cookie”（首次使用安装[Docker 状态桥接](./cookie-helper/README.md)），或手动填写有效 Cookie。
 3. 创建任务并选择字幕、转写和总结相关选项。
 
 ## 常用命令

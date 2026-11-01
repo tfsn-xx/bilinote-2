@@ -30,6 +30,7 @@ export function createHelper(browser = new LoginBrowser()) {
       return send(405, { error: '请使用 JSON POST 请求。' });
     }
     for (const [id, session] of sessions) if (session.expires < Date.now()) sessions.delete(id);
+    if (request.url === '/health') return send(200, { service: 'bilinote-cookie-helper' });
     try {
       const start = /^\/capture\/(bilibili|youtube|douyin|kuaishou)$/.exec(request.url);
       if (start) {
